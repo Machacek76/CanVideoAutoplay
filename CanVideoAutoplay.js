@@ -1,11 +1,10 @@
 
-
 /**
  * Function for check is browser can autoplay video
  *
  * @constructor
  * @author: Milan Machacek
- * @version: 0.7
+ * @version: 0.7.1
  * @param {function} callback
  */
 
@@ -27,17 +26,18 @@ var CanVideoAutoplay = function (callback) {
         , type          : ''
         , root          : ''
         , canAutoplay   : false
-        , localStorage  : localStorage.getItem("canVideoAutoplay")
+        , sessionStorage: JSON.parse( sessionStorage.getItem("canVideoAutoplay") )
+        , videoId       : 'video-id'
     };
 
     self.callback = callback;
     
 
     /**
-     * check localstorage
+     * check sessionStorage
      */
-    if( self.options.localStorage !== null ){
-        self.callback ( JSON.parse( self.options.localStorage ));
+    if( self.options.sessionStorage === true ){
+        self.callback ( self.options.sessionStorage );
         self.callback = function() {};
         return;
     }
@@ -46,44 +46,41 @@ var CanVideoAutoplay = function (callback) {
      * check video support
      */
     if (self.options.video.canPlayType('video/webm')) {
-        self.options.type = self.options.webmType;
         self.options.src = self.options.webm;
+        self.options.type = self.options.webmType;
     } else if (self.options.video.canPlayType('video/mp4')) {
-        self.options.type = self.options.mp4Type;
         self.options.src = self.options.mp4;
+        self.options.type = self.options.mp4Type;
     } else {
-        self.options.type = self.options.oggType;
         self.options.src = self.options.ogg;
+        self.options.type = self.options.oggType;
     }
+
+
+    self.getRandID = function (max) {
+        self.options.videoId =  "vided-" + Math.floor(Math.random() * Math.floor(max));
+        return self.options.videoId;
+    }
+      
 
     /**
      * set video element
      */
- //   self.options.video.setAttribute('style', 'width:320px; height:180px; position:absolute; top:60000px; z-index:-100;');
+    //   self.options.video.setAttribute('style', 'width:320px; height:180px; position:absolute; top:60000px; z-index:-100;');
     self.options.video.muted = true;
     self.options.video.autoplay = true;
     self.options.video.setAttribute('src', self.options.src);
-    self.options.root = document.getElementsByTagName('html')[0];
+    self.options.video.setAttribute('style', 'position:absolute;top:0;width:320px; z-index:-1');
+    self.options.video.setAttribute('id', self.getRandID (3000) );
+    self.options.root = document.getElementsByTagName('body')[0];
     self.options.root.appendChild(self.options.video);
 
-    /**
-     * create listener
-     */
-    self.options.video.onplay = function() {
-        self.options.canAutoplay = true;
-        self.runCallback();
-    };
-
-    self.options.video.onerror = function() {
-        self.options.canAutoplay = false;
-        self.runCallback();
-    };
 
 
     /**
      * run callback if not video start to 000ms
      */
-    setTimeout(function(){ self.runCallback(); }, 2000);
+    setTimeout(function(){ self.runCallback(); }, 5000);
     
     /**
      * call callback and clear stage
@@ -91,8 +88,27 @@ var CanVideoAutoplay = function (callback) {
     self.runCallback = function (){
         self.callback (self.options.canAutoplay);
         self.callback = function() {};
-        self.options.root.removeChild(self.options.video);
-        localStorage.setItem('canVideoAutoplay', self.options.canAutoplay);
+        sessionStorage.setItem('canVideoAutoplay', self.options.canAutoplay);
+        try {
+            if(document.getElementById(self.options.videoId) ){
+                document.getElementById(self.options.videoId).remove();
+            }
+            self.options.root.removeChild(self.options.video);
+        }catch(e) {}
     }
+
+
+    /**
+     * create listeners
+     */
+    self.options.video.onplay = function() {
+        self.options.canAutoplay = true;
+        self.runCallback();
+    };
+
+    self.options.video.onerror = function(e) {
+        self.options.canAutoplay = false;
+        self.runCallback();
+    };
 
 }
