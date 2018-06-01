@@ -58,7 +58,7 @@ var CanVideoAutoplay = function (callback) {
 
 
     self.getRandID = function (max) {
-        self.options.videoId =  "vided-" + Math.floor(Math.random() * Math.floor(max));
+        self.options.videoId =  "video-" + Math.floor(Math.random() * Math.floor(max));
         return self.options.videoId;
     }
       
